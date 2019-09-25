@@ -1,6 +1,7 @@
 package com.kamelong;
 
-import com.kamelong.OuDia.DiaFile;
+import com.kamelong.oudia.LineFile;
+
 import java.io.File;
 
 public class Sample {
@@ -13,7 +14,7 @@ public class Sample {
         try{
 
             //読み込み
-            DiaFile diaFile=new DiaFile(new File(inputOudPath));
+            LineFile diaFile=new LineFile(new File(inputOudPath));
 
             //路線名表示テスト
             System.out.println("路線名:"+diaFile.name);

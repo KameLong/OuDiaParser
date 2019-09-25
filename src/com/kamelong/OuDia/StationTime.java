@@ -1,4 +1,4 @@
-package com.kamelong.OuDia;
+package com.kamelong.oudia;
 
 import com.kamelong.tool.SDlog;
 
@@ -14,58 +14,67 @@ import java.util.ArrayList;
  * １つの駅停車情報を表します。
  * StationTimeはTrainに紐付けられます。
  */
-public class StationTime {
+public class StationTime implements Cloneable {
+    /**
+     * 親列車
+     */
+    public Train train=null;
     /**
      『駅扱』を表します。
      */
-    public int stopType=STOP_TYPE_NOSERVICE;
-    public static final int STOP_TYPE_NOSERVICE = 0;
-    public static final int STOP_TYPE_STOP = 1;
-    public static final int STOP_TYPE_PASS = 2;
-    public static final int STOP_TYPE_NOVIA = 3;
+    public byte stopType=STOP_TYPE_NOSERVICE;
+    public static final byte STOP_TYPE_NOSERVICE = 0;
+    public static final byte STOP_TYPE_STOP = 1;
+    public static final byte STOP_TYPE_PASS = 2;
+    public static final byte STOP_TYPE_NOVIA = 3;
 
     /**
      * 着時刻
      * 着時刻が存在しない時は負の数となります
      * 時刻は秒単位で表現し、0:00:00を0とします。
      * 1:00:00は3600、10:08:20は10*3600+8*60+20=36,500となります。
+     * なお、内部処理を行う観点から、時刻の起点を3:00:00とします
      */
-    public int ariTime=-1;
+    private int ariTime = -1;
     /**
      * 発時刻
      * 発時刻が存在しない時は負の数となります
      * 時刻は秒単位で表現し、0:00:00を0とします。
+     * なお、内部処理を行う観点から、時刻の起点を3:00:00とします
      */
-    public int depTime=-1;
+    private int depTime = -1;
     /**
      * 番線
      * デフォルト=-1
      */
-    public int stopTrack=-1;
+    public byte stopTrack=-1;
 
     /**
      * 前作業一覧
      */
-    public ArrayList<StationTimeOperation>beforeOperations=new ArrayList<>();
+    public ArrayList<StationTimeOperation> beforeOperations=new ArrayList<>();
     /**
      * 後作業一覧
      */
-    public ArrayList<StationTimeOperation>afterOperations=new ArrayList<>();
-    /**
-     * 親列車
-     */
-    public Train train=null;
+    public ArrayList<StationTimeOperation> afterOperations=new ArrayList<>();
 
     public StationTime(Train train){
         this.train=train;
     }
 
-    @Override
-    public StationTime clone() {
+    public StationTime clone(Train train) {
+
         try {
             StationTime other = (StationTime) super.clone();
-            for (StationTimeOperation operation : beforeOperations) {
-                other.beforeOperations.add(operation.clone());
+            other.beforeOperations=new ArrayList<>();
+            other.afterOperations=new ArrayList<>();
+            other.train=train;
+            try {
+                for (StationTimeOperation operation : beforeOperations) {
+                    other.beforeOperations.add(operation.clone());
+                }
+            }catch (Exception e){
+                e.printStackTrace();
             }
             for (StationTimeOperation operation : afterOperations) {
                 other.afterOperations.add(operation.clone());
@@ -84,35 +93,35 @@ public class StationTime {
         }
         if (!value.contains(";")) {
             if(value.contains("$")){
-                stopTrack = Integer.parseInt(value.split("\\$", -1)[1]);
-                stopType= Integer.parseInt(value.split("\\$", -1)[0]);
+                stopTrack = Byte.parseByte(value.split("\\$", -1)[1]);
+                stopType= Byte.parseByte(value.split("\\$", -1)[0]);
 
                 return;
 
             }
-            stopType=Integer.parseInt(value);
+            stopType= Byte.parseByte(value);
             return;
         }
-        stopType=Integer.parseInt(value.split(";", -1)[0]);
+        stopType= Byte.parseByte(value.split(";", -1)[0]);
         value=value.split(";",-1)[1];
         if(value.contains("$")){
-            stopTrack = Integer.parseInt(value.split("\\$", -1)[1]);
+            stopTrack = Byte.parseByte(value.split("\\$", -1)[1]);
             value=value.split("\\$")[0];
         }
         if (value.contains("/")) {
-            ariTime= timeStringToInt(value.split("/", -1)[0]);
+            setAriTime(timeStringToInt(value.split("/", -1)[0]));
             if (value.split("/", -1)[1].length() != 0) {
-                depTime=timeStringToInt(value.split("/", -1)[1]);
+                setDepTime(timeStringToInt(value.split("/", -1)[1]));
             }
         } else {
-            depTime=timeStringToInt(value);
+            setDepTime(timeStringToInt(value));
         }
     }
     void setTrack(String value){
         if(value.contains(";")){
             value=value.split(";")[0];
         }
-        stopTrack=Integer.parseInt(value)-1;
+        stopTrack=(byte)(Byte.parseByte(value)-1);
     }
 
     /**
@@ -184,7 +193,7 @@ public class StationTime {
             return value;
         }
         if(stopType==3){
-            value+=2;
+            value+=0;
         }else {
             value += stopType;
         }
@@ -206,10 +215,15 @@ public class StationTime {
         }
         return value;
     }
+    /*
+    =================================
+    ここまでOuDiaライブラリ共通の処理
+    =================================
+     */
 
 
     /**
-     * @param ad Train.BOUND_OUT or Train.BOUND_IN
+     * @param ad Train.DOWN or Train.UP
      * @return 各時刻が存在する場合はtrue、存在しないときはfalseを返します
      */
     public boolean timeExist(int ad){
@@ -245,9 +259,72 @@ public class StationTime {
      */
     public int getStopTrack(){
         if(stopTrack<0){
-            return train.diaFile.station.get(train.getStationIndex(train.stationTimes.indexOf(this))).stopMain[train.direction];
+            return train.lineFile.station.get(train.getStationIndex(train.stationTimes.indexOf(this))).stopMain[train.direction];
         }
         return stopTrack;
+    }
+
+    public int getDepTime() {
+        return depTime;
+    }
+
+    public void setDepTime(int time) {
+        if (time < 0) {
+            depTime = -1;
+            return;
+
+        }
+        if (time < 3 * 3600) {
+            time += 24 * 3600;
+        }
+        if (time >= 27 * 3600) {
+            time -= 24 * 3600;
+        }
+        depTime = time;
+    }
+
+    public int getAriTime() {
+        return ariTime;
+    }
+
+    public void setAriTime(int time) {
+        if (time < 0) {
+            ariTime = -1;
+            return;
+        }
+        if (time < 3 * 3600) {
+            time += 24 * 3600;
+        }
+        if (time >= 27 * 3600) {
+            time -= 24 * 3600;
+        }
+        ariTime = time;
+    }
+
+    public void shiftDep(int shift) {
+        if (depTime < 0) {
+            return;
+        }
+        depTime += shift;
+        if (depTime < 3 * 3600) {
+            depTime += 24 * 3600;
+        }
+        if (depTime >= 27 * 3600) {
+            depTime -= 24 * 3600;
+        }
+    }
+
+    public void shiftAri(int shift) {
+        if (ariTime < 0) {
+            return;
+        }
+        ariTime += shift;
+        if (ariTime < 3 * 3600) {
+            ariTime += 24 * 3600;
+        }
+        if (ariTime >= 27 * 3600) {
+            ariTime -= 24 * 3600;
+        }
     }
 
 

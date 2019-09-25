@@ -1,4 +1,4 @@
-package com.kamelong.OuDia;
+package com.kamelong.oudia;
 
 
 import com.kamelong.tool.SDlog;
@@ -10,12 +10,13 @@ import java.io.PrintWriter;
  *
  * This source code is released under GNU GPL ver3.
  */
+
 /**
  * １つ路線外発着駅を表します。
  * OuterTerminalは全てStationに管理されます。
  */
 
-public class OuterTerminal implements Cloneable{
+public class OuterTerminal implements Cloneable {
     /**
      路線外発着駅名です。
      作業設定画面で用います。
@@ -53,7 +54,7 @@ public class OuterTerminal implements Cloneable{
     /**
      * oudiaの1行を読み込む
      */
-    void setValue(String title,String value){
+    public void setValue(String title, String value){
         switch (title){
             case"OuterTerminalEkimei":
                 outerTerminalDiaName=value;
