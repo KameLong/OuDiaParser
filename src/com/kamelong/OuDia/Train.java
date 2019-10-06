@@ -1,14 +1,14 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
 import com.kamelong.tool.Color;
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
-import static com.kamelong.oudia.StationTime.*;
-
-
+import static com.kamelong.OuDia.StationTime.STOP_TYPE_NOSERVICE;
+import static com.kamelong.OuDia.StationTime.STOP_TYPE_NOVIA;
+import static com.kamelong.OuDia.StationTime.STOP_TYPE_PASS;
 /*
  * Copyright (c) 2019 KameLong
  * contact:kamelong.com
@@ -20,14 +20,6 @@ import static com.kamelong.oudia.StationTime.*;
  * 列車１つを表します
  */
 public class Train implements Cloneable {
-    public static long count2=0;
-    public static final int DEPART = 0;
-    public static final int ARRIVE = 1;
-    //下り
-    public static final int DOWN =0;
-    //上り
-    public static final int UP =1;
-
     public LineFile lineFile;
     /**
      この列車の列車方向を示します。
@@ -35,6 +27,15 @@ public class Train implements Cloneable {
      コンストラクタで決まります。
      */
     public int direction = DOWN;
+
+
+    public static final int DEPART = 0;
+    public static final int ARRIVE = 1;
+    //下り
+    public static final int DOWN =0;
+    //上り
+    public static final int UP =1;
+
 
 
     /**
@@ -83,7 +84,7 @@ public class Train implements Cloneable {
     /**
      * OuDiaファイルの１行を読み込みます
      */
-    void setValue(String title, String value){
+    void setValue(String title,String value){
         switch (title) {
             case "Syubetsu":
                 type = Integer.parseInt(value);
@@ -119,7 +120,7 @@ public class Train implements Cloneable {
                     operationList=stationTimes.get(index).afterOperations;
                 }
                 for(int i=1;i<stations.length;i++){
-                    int index2= Integer.parseInt(stations[i].substring(0,stations[i].length()-1));
+                    int index2=Integer.parseInt(stations[i].substring(0,stations[i].length()-1));
                     if(stations[i].substring(stations[i].length()-1).equals("B")){
                         operationList=operationList.get(index2).beforeOperation;
                     }else{
@@ -197,14 +198,17 @@ public class Train implements Cloneable {
         if (remark.length() > 0) {
             out.println("Bikou=" + remark );
         }
-        for(int i=0;i<stationTimes.size();i++){
-            int index=getStationIndex(i);
-            saveOperationToFile(out,stationTimes.get(index).beforeOperations,"Operation"+i+"B");
-            saveOperationToFile(out,stationTimes.get(index).afterOperations,"Operation"+i+"A");
-        }
-        out.println(".");
+        if(getStartStation()>=0) {
+            if (stationTimes.get(getStartStation()).beforeOperations.size() > 0) {
+                saveOperationToFile(out, stationTimes.get(getStartStation()).beforeOperations, "Operation" + getStationIndex(getStartStation()) + "B");
+            }
+            if (stationTimes.get(getEndStation()).afterOperations.size() > 0) {
+                saveOperationToFile(out, stationTimes.get(getEndStation()).afterOperations, "Operation" + getStationIndex(getEndStation()) + "A");
+            }
+            }
+            out.println(".");
     }
-    private void saveOperationToFile(PrintWriter out, ArrayList<StationTimeOperation> target, String title){
+    private void saveOperationToFile(PrintWriter out,ArrayList<StationTimeOperation>target,String title){
         if(target.size()==0)return;
         String result=title+"=";
         for(int i=0;i<target.size();i++) {
@@ -212,14 +216,6 @@ public class Train implements Cloneable {
         }
         out.println(result.substring(0,result.length()-1));
 
-        for(int i=0;i<target.size();i++){
-            if(target.get(i).beforeOperation.size()!=0){
-                saveOperationToFile(out,target.get(i).beforeOperation,title+"."+i+"B");
-            }
-            if(target.get(i).afterOperation.size()!=0){
-                saveOperationToFile(out,target.get(i).afterOperation,title+"."+i+"A");
-            }
-        }
 
     }
     void saveToOuDiaFile(PrintWriter out){
@@ -280,6 +276,11 @@ public class Train implements Cloneable {
         }
     }
 
+    /**
+     *
+     * @param lineFile 親LineFile
+     * @return コピーした列車
+     */
     public Train clone(LineFile lineFile){
         try {
             Train result = (Train) super.clone();
@@ -292,7 +293,7 @@ public class Train implements Cloneable {
             }
             return result;
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new Train(lineFile,direction);
         }
     }
@@ -309,6 +310,11 @@ public class Train implements Cloneable {
     public int getStationNum(){
         return stationTimes.size();
     }
+
+    /**
+     * この列車がすべての駅で運行なしの場合、
+     * 使用されていないnull列車とします
+     */
     public boolean isnull() {
         for (int i = 0; i < lineFile.getStationNum(); i++) {
             if (stationTimes.get(i).stopType!=0) return false;
@@ -342,6 +348,23 @@ public class Train implements Cloneable {
         return -1;
     }
     /**
+     * 列車の時刻が存在する最初の駅を返す。もし、全ての駅で運行されていなければ-1を返す
+     * @return
+     */
+    public int getTimeStartStation(){
+        if(direction==0){
+            for(int i=0;i<stationTimes.size();i++){
+                if(timeExist(i))return i;
+            }
+        }else{
+            for(int i=stationTimes.size()-1;i>=0;i--){
+                if(timeExist(i))return i;
+            }
+
+        }
+        return -1;
+    }
+    /**
      * 列車の種着駅を返す。もし、全ての駅で運行されていなければ-1を返す
      * @return
      */
@@ -366,6 +389,23 @@ public class Train implements Cloneable {
         }
         return -1;
     }
+    /**
+     * 列車の種着駅を返す。もし、全ての駅で運行されていなければ-1を返す
+     * @return
+     */
+    public int getTimeEndStation(){
+        if(direction==1){
+            for(int i=0;i<stationTimes.size();i++){
+                if(timeExist(i))return i;
+            }
+        }else{
+            for(int i=stationTimes.size()-1;i>=0;i--){
+                if(timeExist(i))return i;
+            }
+
+        }
+        return -1;
+    }
 
 
 
@@ -376,54 +416,96 @@ public class Train implements Cloneable {
     }
 
 
-
+    /**
+     * 列車の文字色
+     */
     public Color getTextColor() {
         return lineFile.trainType.get(type).textColor;
     }
 
-
+    /**
+     * 列車の種別名
+     */
     public String getTypeName() {
         return lineFile.trainType.get(type).name;
     }
+
+    /**
+     * 列車の種別略称
+     */
     public String getTypeShortName() {
         return lineFile.trainType.get(type).shortName;
     }
 
+    /**
+     * 指定駅の停車タイプを返します
+     * @return int(0-3)
+     */
 
     public int getStopType(int stationIndex) {
+        if(stationIndex<0||stationIndex>=getStationNum()){
+            return STOP_TYPE_NOSERVICE;
+        }
         return stationTimes.get(stationIndex).stopType;
     }
 
+    /**
+     * 指定駅の停車タイプを設定します
+     */
     public void setStopType(int stationIndex, int type) {
         stationTimes.get(stationIndex).stopType=(byte)type;
-
+        if(type==0){
+            stationTimes.get(stationIndex).setAriTime(-1);
+            stationTimes.get(stationIndex).setDepTime(-1);
+        }
     }
 
+    /**
+     * 指定駅に有効な時刻が存在するか（着時刻、発時刻の片方でもあればよい)
+     */
     public boolean timeExist(int stationIndex) {
         return stationTimes.get(stationIndex).timeExist();
     }
+    /**
+     * 指定駅に有効な時刻が存在するか（着時刻、発時刻別)
+     * AD=0:dep,AD=1:Ari
+     */
 
     public boolean timeExist(int stationIndex, int AD) {
         return stationTimes.get(stationIndex).timeExist(AD);
     }
 
+    /**
+     * 着時刻取得
+     */
     public int getDepTime(int station) {
         return stationTimes.get(station).getDepTime();
     }
 
+    /**
+     * 着時刻設定
+     */
     public void setDepTime(int station, int value) {
         stationTimes.get(station).setDepTime(value);
-
     }
 
+    /**
+     * 発時刻取得
+     */
     public int getAriTime(int station) {
         return stationTimes.get(station).getAriTime();
     }
 
+    /**
+     * 発時刻設定
+     */
     public void setAriTime(int station, int value) {
         stationTimes.get(station).setAriTime(value);
-
     }
+
+    /**
+     * 時刻取得(発時刻、着時刻別）
+     */
     public int getTime(int station,int AD){
         if(AD==0){
             return  getDepTime(station);
@@ -431,6 +513,11 @@ public class Train implements Cloneable {
             return getAriTime(station);
         }
     }
+    /**
+     * 時刻取得(発時刻、着時刻別）
+     * useOther=trueの時、該当時刻が存在しないとき、代わりに同一駅の（発時刻、着時刻)を使用する。
+     * 両方ともないときは-1
+     */
     public int getTime(int station,int AD,boolean useOther){
         if(useOther){
             if(timeExist(station,AD)){
@@ -441,6 +528,10 @@ public class Train implements Cloneable {
         }
         return getTime(station,AD);
     }
+    /**
+     * 時刻設定(発時刻、着時刻別）
+     */
+
     public void setTime(int station,int AD,int time){
         if(AD==0){
             setDepTime(station,time);
@@ -449,6 +540,9 @@ public class Train implements Cloneable {
         }
     }
 
+    /**
+     * 発着番線取得
+     */
     public int getStopTrack(int station) {
         int result=stationTimes.get(station).stopTrack;
         if(result<0){
@@ -457,11 +551,17 @@ public class Train implements Cloneable {
         return result;
     }
 
+    /**
+     * 発着番線設定
+     */
     public void setStopTrack(int station, int value) {
         stationTimes.get(station).stopType=(byte)value;
-
     }
 
+    /**
+     * 路線外始発駅名
+     * 路線外始発駅が存在しない場合はnullが返る
+     */
     public String getOuterStartStationName() {
         int startStation=getStartStation();
         if(startStation<0){
@@ -474,7 +574,22 @@ public class Train implements Cloneable {
         }
         return null;
     }
+    public int getOuterStartStation(){
+        int startStation=getStartStation();
+        if(startStation<0){
+            return -1;
+        }
+        for(StationTimeOperation operation:stationTimes.get(startStation).beforeOperations){
+            if(operation.operationType==4){
+                return operation.intData1;
+            }
+        }
+        return -1;
+    }
 
+    /**
+     * 路線外始発駅始発時刻
+     */
     public int getOuterStartTime() {
         int startStation=getStartStation();
         if(startStation<0){
@@ -488,6 +603,10 @@ public class Train implements Cloneable {
         return -1;
     }
 
+    /**
+     * 路線外終着駅名
+     * 路線外終着駅が存在しない場合はnullが返る
+     */
     public String getOuterEndStationName() {
         int endStation=getEndStation();
         if(endStation<0){
@@ -498,8 +617,25 @@ public class Train implements Cloneable {
                 return lineFile.getStation(endStation).getOuterStationTimeTableName(operation.intData1);
             }
         }
-        return null;    }
+        return null;
+    }
+    public int getOuterEndStation(){
+        int endStation=getEndStation();
+        if(endStation<0){
+            return -1;
+        }
+        for(StationTimeOperation operation:stationTimes.get(endStation).afterOperations){
+            if(operation.operationType==4){
+                return operation.intData1;
+            }
+        }
+        return -1;
+    }
 
+
+    /**
+     * 路線外終着駅時刻
+     */
     public int getOuterEndTime() {
         int endStation=getEndStation();
         if(endStation<0){
@@ -557,6 +693,12 @@ public class Train implements Cloneable {
         }
         setDepTime(stationIndex,-1);
     }
+
+    /**
+     * 列車を結合する
+     * 結合駅の出発時刻はotherのものを用いる
+     * @param other
+     */
     public void conbine(Train other){
         int endStation=this.getEndStation();
         if(direction==0){
@@ -584,12 +726,19 @@ public class Train implements Cloneable {
         }
         return -1;
     }
+
+    /**
+     * 列車の通過予想時刻
+     * この駅を列車が通過しないと判断したら-1が返る
+     */
     public int getPredictionTime(int station) {
         return getPredictionTime(station,DEPART);
     }
-
+    /**
+     * 列車の通過予想時刻
+     * AD=1の時、着時刻が存在する場合は着時刻っを優先する
+     */
     public int getPredictionTime(int station, int AD) {
-
         if (AD == 1 && timeExist(station,ARRIVE)) {
             return getAriTime(station);
         }
@@ -621,7 +770,7 @@ public class Train implements Cloneable {
                 }
             }
             if (afterTime < 0) {
-                SDlog.log("予測時間", "afterTime");
+                Logger.log("予測時間", "afterTime");
                 //対象駅より先の駅で駅時刻が存在する駅がなかった
                 return -1;
             }
@@ -675,7 +824,7 @@ public class Train implements Cloneable {
                     }
                 }
                 if (getStopType(index - 1) == STOP_TYPE_NOVIA) {
-                    if (getStopType(index) == STOP_TYPE_NOVIA) {
+                    if (getStopType(index) == StationTime.STOP_TYPE_NOVIA) {
                         time.stopType = STOP_TYPE_NOVIA;
                     }
                 }
@@ -700,5 +849,46 @@ public class Train implements Cloneable {
         }
         return false;
     }
+    public void setOuterEndStation(int outer){
+        int station=getEndStation();
+        if(stationTimes.get(station).afterOperations.size()>0){
+            stationTimes.get(station).afterOperations.get(0).operationType=4;
+            stationTimes.get(station).afterOperations.get(0).intData1=outer;
+
+
+        }
+    }
+    public void setOuterStartStation(int outer){
+        int station=getStartStation();
+        if(stationTimes.get(station).beforeOperations.size()>0){
+            stationTimes.get(station).beforeOperations.get(0).operationType=4;
+            stationTimes.get(station).beforeOperations.get(0).intData1=outer;
+        }
+    }
+    public void setOuterStartTime(int time){
+        int station=getStartStation();
+        if(station<0){
+            Logger.toast("空列車に路線外始発駅を設定する事はできません");
+            return;
+        }
+        if(stationTimes.get(station).beforeOperations.size()>0){
+            stationTimes.get(station).beforeOperations.get(0).operationType=4;
+            stationTimes.get(station).beforeOperations.get(0).time1=time;
+        }
+    }
+    public void setOuterEndTime(int time){
+        int station=getEndStation();
+        if(station<0){
+            Logger.toast("空列車に路線外始発駅を設定する事はできません");
+            return;
+        }
+        if(stationTimes.get(station).afterOperations.size()>0){
+            stationTimes.get(station).afterOperations.get(0).operationType=4;
+            stationTimes.get(station).afterOperations.get(0).time1=time;
+
+
+        }
+    }
+
 
 }

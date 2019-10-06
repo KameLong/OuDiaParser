@@ -1,7 +1,7 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
 
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 
 import java.io.PrintWriter;
 /*
@@ -16,7 +16,7 @@ import java.io.PrintWriter;
  * OuterTerminalは全てStationに管理されます。
  */
 
-public class OuterTerminal implements Cloneable {
+public class OuterTerminal implements Cloneable{
     /**
      路線外発着駅名です。
      作業設定画面で用います。
@@ -54,10 +54,10 @@ public class OuterTerminal implements Cloneable {
     /**
      * oudiaの1行を読み込む
      */
-    public void setValue(String title, String value){
+    public void setValue(String title,String value){
         switch (title){
             case"OuterTerminalEkimei":
-                outerTerminalDiaName=value;
+                outerTerminalName=value;
                 break;
             case"OuterTerminalJikokuRyaku":
                 outerTerminalTimeTableName =value;
@@ -72,7 +72,7 @@ public class OuterTerminal implements Cloneable {
      */
     void saveToFile(PrintWriter out){
         out.println("OuterTerminal.");
-        out.println("OuterTerminalEkimei="+outerTerminalDiaName);
+        out.println("OuterTerminalEkimei="+outerTerminalName);
         out.println("OuterTerminalJikokuRyaku="+ outerTerminalTimeTableName);
         out.println("OuterTerminalDiaRyaku="+outerTerminalDiaName);
         out.println(".");
@@ -82,7 +82,7 @@ public class OuterTerminal implements Cloneable {
         try{
             return (OuterTerminal)super.clone();
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new OuterTerminal();
         }
     }

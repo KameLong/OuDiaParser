@@ -1,6 +1,6 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 
 import java.util.ArrayList;
 /*
@@ -14,7 +14,7 @@ import java.util.ArrayList;
  * １つの駅停車情報を表します。
  * StationTimeはTrainに紐付けられます。
  */
-public class StationTime implements Cloneable {
+public class StationTime implements Cloneable{
     /**
      * 親列車
      */
@@ -52,16 +52,20 @@ public class StationTime implements Cloneable {
     /**
      * 前作業一覧
      */
-    public ArrayList<StationTimeOperation> beforeOperations=new ArrayList<>();
+    public ArrayList<StationTimeOperation>beforeOperations=new ArrayList<>();
     /**
      * 後作業一覧
      */
-    public ArrayList<StationTimeOperation> afterOperations=new ArrayList<>();
+    public ArrayList<StationTimeOperation>afterOperations=new ArrayList<>();
 
     public StationTime(Train train){
         this.train=train;
     }
 
+    /**
+     * @param train コピー先の親列車
+     * @return
+     */
     public StationTime clone(Train train) {
 
         try {
@@ -81,7 +85,7 @@ public class StationTime implements Cloneable {
             }
             return other;
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new StationTime(train);
         }
     }
@@ -99,10 +103,10 @@ public class StationTime implements Cloneable {
                 return;
 
             }
-            stopType= Byte.parseByte(value);
+            stopType=Byte.parseByte(value);
             return;
         }
-        stopType= Byte.parseByte(value.split(";", -1)[0]);
+        stopType=Byte.parseByte(value.split(";", -1)[0]);
         value=value.split(";",-1)[1];
         if(value.contains("$")){
             stopTrack = Byte.parseByte(value.split("\\$", -1)[1]);
@@ -117,11 +121,27 @@ public class StationTime implements Cloneable {
             setDepTime(timeStringToInt(value));
         }
     }
+
+    /**
+     * OuDia2ndV1までの発着番線読み込み
+     * 運用機能は無視する
+     * @param value
+     */
     void setTrack(String value){
-        if(value.contains(";")){
-            value=value.split(";")[0];
+        try {
+            if (value.length() == 0) {
+                stopTrack=-1;
+                return;
+
+            }
+            if (value.contains(";")) {
+                value = value.split(";")[0];
+            }
+            stopTrack = (byte) (Byte.parseByte(value) - 1);
+        }catch(Exception e){
+            stopTrack=-1;
+            Logger.log(e);
         }
-        stopTrack=(byte)(Byte.parseByte(value)-1);
     }
 
     /**
@@ -255,7 +275,6 @@ public class StationTime implements Cloneable {
     /**
      * 発着番線を返します。
      * trackが-1の時はデフォルトの発着番線を返します。
-     *
      */
     public int getStopTrack(){
         if(stopTrack<0){
@@ -264,9 +283,16 @@ public class StationTime implements Cloneable {
         return stopTrack;
     }
 
+    /**
+     * @return 発時刻
+     */
     public int getDepTime() {
         return depTime;
     }
+    /**
+     * 発時刻設定。
+     * 時刻の正規化を行います
+     */
 
     public void setDepTime(int time) {
         if (time < 0) {
@@ -283,10 +309,17 @@ public class StationTime implements Cloneable {
         depTime = time;
     }
 
+    /**
+     * @return 着時刻
+     */
     public int getAriTime() {
         return ariTime;
     }
 
+    /**
+     * 着時刻設定、時刻の正規化を行います
+     * @param time
+     */
     public void setAriTime(int time) {
         if (time < 0) {
             ariTime = -1;
@@ -301,6 +334,9 @@ public class StationTime implements Cloneable {
         ariTime = time;
     }
 
+    /**
+     * 発時刻をスライドさせます。
+     */
     public void shiftDep(int shift) {
         if (depTime < 0) {
             return;
@@ -313,7 +349,10 @@ public class StationTime implements Cloneable {
             depTime -= 24 * 3600;
         }
     }
-
+    /**
+     * 着時刻をスライドさせます。
+     * 時刻が存在しないときは、スライドしません。
+     */
     public void shiftAri(int shift) {
         if (ariTime < 0) {
             return;
@@ -326,6 +365,4 @@ public class StationTime implements Cloneable {
             ariTime -= 24 * 3600;
         }
     }
-
-
 }

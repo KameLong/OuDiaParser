@@ -85,7 +85,7 @@ public class Font implements Cloneable{
         try {
             return (Font) super.clone();
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new Font();
         }
     }

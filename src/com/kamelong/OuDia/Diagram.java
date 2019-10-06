@@ -1,6 +1,6 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -16,7 +16,12 @@ import java.util.Collections;
  * １つのダイヤを表します。
  * ダイヤは１つの路線に複数作る事ができますが、同一路線中のダイヤは全て同じ駅順を持ちます。
  */
-public class Diagram implements Cloneable {
+public class Diagram implements Cloneable{
+    /**
+     * 親LineFile
+     * このオブジェクトを生成する際には必ずlineFileを設定する必要があります。
+     * 別のLineFileにこのオブジェクトをコピーする際には、lineFileを書き換えてください。
+     */
     public LineFile lineFile;
     public static final int TIMETABLE_BACKCOLOR_NUM = 4;
     /**
@@ -66,19 +71,22 @@ public class Diagram implements Cloneable {
         trains[0]=new ArrayList<>();
         trains[1]=new ArrayList<>();
     }
-    protected void setValue(String title, String value){
+    /**
+     * OuDia形式で、データを読み込みます。
+     */
+    protected void setValue(String title,String value){
         switch (title){
             case "DiaName":
                 name=value;
                 break;
             case "MainBackColorIndex":
-                mainBackColorIndex= Integer.parseInt(value);
+                mainBackColorIndex=Integer.parseInt(value);
                 break;
             case "SubBackColorIndex":
-                subBackColorIndex= Integer.parseInt(value);
+                subBackColorIndex=Integer.parseInt(value);
                 break;
             case "BackPatternIndex":
-                timeTableBackPatternIndex= Integer.parseInt(value);
+                timeTableBackPatternIndex=Integer.parseInt(value);
                 break;
         }
     }
@@ -123,6 +131,10 @@ public class Diagram implements Cloneable {
         out.println(".");
         out.println(".");
     }
+    /**
+     * Diagramをコピーします。
+     * lineFile:コピー先のDiagramが所属するLineFile
+     */
 
     public Diagram clone(LineFile lineFile){
         try {
@@ -139,7 +151,7 @@ public class Diagram implements Cloneable {
             }
             return result;
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new Diagram(lineFile);
         }
     }
@@ -152,21 +164,28 @@ public class Diagram implements Cloneable {
 
     /**
      * 指定方向の列車数を返します
-     * @param direction
-     * @return
      */
     public int getTrainNum(int direction) {
-        return trains[direction].size();
+        try {
+            return trains[direction].size();
+        }catch (IndexOutOfBoundsException e){
+            return 0;
+        }
     }
 
 
     /**
-     * 列車を取得思案す
+     * 列車を取得します
      * @param direction 方向(0,1)
      * @param index 列車index
      */
     public Train getTrain(int direction, int index) {
-        return trains[direction].get(index);
+        try {
+            return trains[direction].get(index);
+        }catch(IndexOutOfBoundsException e){
+            Logger.log(e);
+            return new Train(lineFile,0);
+        }
     }
 
     /**
@@ -182,16 +201,20 @@ public class Diagram implements Cloneable {
     /**
      * 指定indexに列車を追加します。
      * index=-1の時は、末尾に追加されます
+     * 列車を追加する際は、その列車が持つStationTimeの数とlineFileの駅数が一致する必要があります
+     * 一致しない場合はfalseを返し、列車の追加を行いません。
+     * 追加に成功するとtrueを返します。
+     *
      */
-    public void addTrain(int direction,int index,Train train){
-        if(train.getStationNum()!= lineFile.getStationNum()){
-            new Exception("列車の駅数とダイヤの駅数が合いません").printStackTrace();
-            SDlog.log("列車の駅数とダイヤの駅数が合いません");
-            return;
+    public boolean addTrain(int direction,int index,Train train){
+        if(train.getStationNum()!=lineFile.getStationNum()){
+            Logger.log("列車の駅数とダイヤの駅数が合いません");
+            return false;
         }
+
         if(index>=0&&index<getTrainNum(direction)){
             trains[direction].add(index,train);
-            train.lineFile = lineFile;
+            train.lineFile=lineFile;
             if(train.direction!=direction){
                 Collections.reverse(train.stationTimes);
             }
@@ -199,6 +222,7 @@ public class Diagram implements Cloneable {
         }else{
             trains[direction].add(train);
         }
+        return true;
     }
 
     /**
@@ -217,264 +241,96 @@ public class Diagram implements Cloneable {
         trains[train.direction].remove(train);
     }
 
+
+    /**
+     * ダイヤのソートを行う前の処理です。
+     * 時刻が存在しない空列車を削除してからソートを行います。
+     */
+    private void beforeSort(int direction){
+        for(int i=0;i<trains[direction].size();i++){
+            if(trains[direction].get(i).isnull()){
+                trains[direction].remove(i);
+                i--;
+            }
+        }
+    }
     /**
      * 時刻表を並び替える。
      * 並び替えに関しては、基準駅の通過時刻をもとに並び替えた後
-     *
      * @param direction     並び替え対象方向
      * @param stationNumber 並び替え基準駅
      */
     public void sortTrain(int direction, int stationNumber) {
-        long startTime = System.currentTimeMillis();
+        beforeSort(direction);
         Train[] trainList = trains[direction].toArray(new Train[0]);
+        TimeTableSorter sorter=new TimeTableSorter(lineFile,trainList,direction);
+        trains[direction]=sorter.sort(stationNumber);
+    }
 
-        //ソートする前の順番を格納したクラス
-        ArrayList<Integer> sortBefore = new ArrayList<>();
-        //ソートした後の順番を格納したクラス
-        ArrayList<Integer> sortAfter = new ArrayList<>();
-        boolean[] sorted=new boolean[lineFile.getStationNum()];
-        for(boolean b:sorted){
-            b=false;
-        }
-
-        for (int i = 0; i < trainList.length; i++) {
-            sortBefore.add(i);
-        }
-
-        for (int i = 0; i < sortBefore.size(); i++) {
-            if (trainList[sortBefore.get(i)].getPredictionTime(stationNumber) > 0 && !trainList[sortBefore.get(i)].checkDoubleDay()) {
-                //今からsortAfterに追加する列車の基準駅の時間
-                int baseTime = trainList[sortBefore.get(i)].getPredictionTime(stationNumber);
-                int j;
-                for (j = sortAfter.size(); j > 0; j--) {
-                    if (trainList[sortAfter.get(j - 1)].getPredictionTime(stationNumber) < baseTime) {
-                        break;
-                    }
-                }
-                sortAfter.add(j, sortBefore.get(i));
-                sortBefore.remove(i);
-                i--;
-            }
-        }
-        sorted[stationNumber]=true;
-        //この時点で基準駅に予測時間を設定できるものはソートされている
-        if (direction == 0) {
-            //ここからは基準駅を通らない列車についてソートを行う
-            upperSearch:
-            for (int station = stationNumber; station > 0; station--) {
-                //基準駅より上方で運行する列車に着いてソートを行う
-                if(lineFile.getStation(station).brunchCoreStationIndex>station){
-                    //この駅が下方駅からの分岐駅の場合
-                    if(sorted[lineFile.getStation(station).brunchCoreStationIndex]){
-                        //分岐駅がソートされている場合
-                        addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{station,lineFile.getStation(station).brunchCoreStationIndex});
-                        stationNumber=station-1;
-                        continue upperSearch;
-                    }else{
-
-                    }
-                }
-                if (lineFile.station.get(station - 1).getBorder()) {
-                    searchStation:
-                    for (int i = station; i > 0; i--) {
-                        //境界線がある駅の次の駅が分岐駅である可能性を探る
-                        if (lineFile.station.get(station).name.equals(lineFile.station.get(i - 1).name)) {
-                            addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{i - 1, station});
-                            for (int j = i; j < station; j++) {
-                                addTrainInSort2(sortBefore, sortAfter, trainList, new int[]{j});
-                            }
-                            station = i;
-                            continue upperSearch;
-                        }
-                    }
-                    for (int i = station; i < lineFile.getStationNum(); i++) {
-                        //境界線がある駅が分岐駅である可能性を探る
-                        if (lineFile.station.get(station - 1).name.equals(lineFile.station.get(i).name)) {
-                            addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{station - 1, i});
-                            for (int j = i; j < station; j++) {
-                                addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{j});
-                            }
-                            continue upperSearch;
-                        }
-                    }
-                }
-                addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{station - 1});
-            }
-//            基準駅より後方から出発する列車に着いてソートを行う
-            downSearch:
-            for (int station = stationNumber + 1; station < lineFile.getStationNum(); station++) {
-                if (lineFile.station.get(station - 1).getBorder()) {
-                    for (int i = station; i > 0; i--) {
-                        if (lineFile.station.get(station).name.equals(lineFile.station.get(i - 1).name)) {
-                            addTrainInSort2(sortBefore, sortAfter, trainList, new int[]{station, i - 1});
-                            continue downSearch;
-                        }
-                    }
-                }
-                if (lineFile.station.get(station).getBorder()) {
-                    for (int i = station + 1; i < lineFile.getStationNum(); i++) {
-                        if (lineFile.station.get(station).name.equals(lineFile.station.get(i).name)) {
-                            addTrainInSort2(sortBefore, sortAfter, trainList, new int[]{i, station});
-                            continue downSearch;
-                        }
-                    }
-                }
-                addTrainInSort2(sortBefore, sortAfter, trainList, new int[]{station});
-
-            }
-        } else {
-            //ここからは基準駅を通らない列車についてソートを行う
-            //基準駅より前方で運行する列車に着いてソートを行う
-            baseStation:
-            for (int station = stationNumber; station > 0; station--) {
-                if (lineFile.station.get(station - 1).getBorder()) {
-                    for (int i = station; i > 0; i--) {
-                        if (lineFile.station.get(station).name.equals(lineFile.station.get(i - 1).name)) {
-                            addTrainInSort2(sortBefore, sortAfter, trainList, new int[]{i - 1, station});
-                            continue baseStation;
-                        }
-                    }
-                }
-                if (lineFile.station.get(station).getBorder()) {
-                    for (int i = station + 1; i < lineFile.getStationNum(); i++) {
-                        if (lineFile.station.get(station).name.equals(lineFile.station.get(i).name)) {
-                            addTrainInSort2(sortBefore, sortAfter, trainList, new int[]{station, i});
-                            continue baseStation;
-                        }
-                    }
-                }
-                addTrainInSort2(sortBefore, sortAfter, trainList, new int[]{station});
-            }
-
-
-            //基準駅より後方から出発する列車に着いてソートを行う
-            baseStation:
-            for (int station = stationNumber + 1; station < lineFile.getStationNum(); station++) {
-                if (lineFile.station.get(station - 1).getBorder()) {
-                    for (int i = station; i > 0; i--) {
-                        if (lineFile.station.get(station).name.equals(lineFile.station.get(i - 1).name)) {
-                            addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{station, i - 1});
-                            continue baseStation;
-                        }
-                    }
-                }
-                if (lineFile.station.get(station).getBorder()) {
-                    for (int i = station + 1; i < lineFile.getStationNum(); i++) {
-                        if (lineFile.station.get(station).name.equals(lineFile.station.get(i).name)) {
-                            addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{i, station});
-                            continue baseStation;
-                        }
-                    }
-
-                }
-                addTrainInSort1(sortBefore, sortAfter, trainList, new int[]{station});
-            }
-
-        }
-
-        for (int i = 0; i < sortBefore.size(); i++) {
-            if (trainList[sortBefore.get(i)].getPredictionTime(stationNumber) > 0) {
-                //今からsortAfterに追加する列車の基準駅の時間
-                int baseTime = trainList[sortBefore.get(i)].getPredictionTime(stationNumber);
-                int j;
-                for (j = sortAfter.size(); j > 0; j--) {
-                    if (trainList[sortAfter.get(j - 1)].getPredictionTime(stationNumber) > 0 && trainList[sortAfter.get(j - 1)].getPredictionTime(stationNumber) < baseTime) {
-                        break;
-                    }
-                }
-                sortAfter.add(j, sortBefore.get(i));
-                sortBefore.remove(i);
-                i--;
-            }
-        }
-
-        sortAfter.addAll(sortBefore);
-        ArrayList<Train> trainAfter = new ArrayList<>();
-        for (int i = 0; i < sortAfter.size(); i++) {
-            trainAfter.add(trainList[sortAfter.get(i)]);
-        }
-        trains[direction] = trainAfter;
-        long endTime = System.currentTimeMillis();
-        long endCount = Train.count2;
-
+    /**
+     * 列車番号ソート
+     */
+    public void sortNumber(int direction){
+        beforeSort(direction);
+        Train[] trainList = trains[direction].toArray(new Train[0]);
+        TimeTableSorter sorter=new TimeTableSorter(lineFile,trainList,direction);
+        trains[direction]=sorter.sortNumber();
 
     }
 
     /**
-     * 列車をsortAfterに時刻後方から挿入する
-     * station[0]に停車する列車がソート対象
-     * station[1以上]は同一駅
+     * 種別ソート
      */
-    private void addTrainInSort1(ArrayList<Integer> sortBefore, ArrayList<Integer> sortAfter, Train[] trains, int[] station) {
-        for (int i = sortBefore.size(); i > 0; i--) {
-            int baseTime = trains[sortBefore.get(i - 1)].getTime(station[0],Train.ARRIVE,true);
-            if (baseTime < 0 || trains[sortBefore.get(i - 1)].checkDoubleDay()) {
-                continue;
-            }
-            int j = 0;
-            boolean frag = false;
+    public void sortType(int direction){
+        beforeSort(direction);
+        Train[] trainList = trains[direction].toArray(new Train[0]);
+        TimeTableSorter sorter=new TimeTableSorter(lineFile,trainList,direction);
+        trains[direction]=sorter.sortType();
 
-            for (j = 0; j < sortAfter.size(); j++) {
-
-                int sortTime=-1;
-                for(int s:station){
-                    sortTime= Math.max(sortTime,trains[sortAfter.get(j)].getPredictionTime(s,Train.DEPART));
-                }
-                if (sortTime < 0) {
-                    continue;
-                }
-                frag = true;
-                if (sortTime >= baseTime) {
-                    break;
-                }
-            }
-            if (frag) {
-                sortAfter.add(j, sortBefore.get(i - 1));
-                sortBefore.remove(i - 1);
-            }
-        }
     }
+    /**
+     * 列車名ソート
+     */
+    public void sortName(int direction){
+        beforeSort(direction);
+        Train[] trainList = trains[direction].toArray(new Train[0]);
+        TimeTableSorter sorter=new TimeTableSorter(lineFile,trainList,direction);
+        trains[direction]=sorter.sortName();
 
-    private void addTrainInSort2(ArrayList<Integer> sortBefore, ArrayList<Integer> sortAfter, Train[] trains, int[] station) {
-        for (int i = 0; i < sortBefore.size(); i++) {
-            int baseTime = trains[sortBefore.get(i)].getDepTime(station[0]);
-            if (baseTime < 0 || trains[sortBefore.get(i)].checkDoubleDay()) {
+    }
+    /**
+     * 備考ソート
+     */
+    public void sortRemark(int direction){
+        beforeSort(direction);
+        Train[] trainList = trains[direction].toArray(new Train[0]);
+        TimeTableSorter sorter=new TimeTableSorter(lineFile,trainList,direction);
+        trains[direction]=sorter.sortRemark();
+    }
+    /**
+     * 列車番号が同一のものを一本化します。
+     * ２本の列車を総当たりで調べていき、列車番号、列車種別、終着駅と相手の始発駅が同じになる組み合わせが見つかれば一本化します。
+     */
+    public void combineByTrainNumber(int direction){
+        for(int i=0;i<trains[direction].size();i++){
+            Train train1=trains[direction].get(i);
+            if(train1.isnull()){
                 continue;
             }
-            int j = 0;
-            boolean frag = false;
-
-            for (j = sortAfter.size(); j > 0; j--) {
-                int sortTime;
-                if (station.length == 2) {
-                    if (trains[sortAfter.get(j - 1)].getPredictionTime(station[0], Train.ARRIVE) > 0 && trains[sortAfter.get(j - 1)].getPredictionTime(station[1], Train.ARRIVE) > 0) {
-                        sortTime = Math.min(
-                                trains[sortAfter.get(j - 1)].getPredictionTime(station[0], Train.ARRIVE),
-                                trains[sortAfter.get(j - 1)].getPredictionTime(station[1], Train.ARRIVE));
-                    } else {
-                        sortTime = Math.max(
-                                trains[sortAfter.get(j - 1)].getPredictionTime(station[0], Train.ARRIVE),
-                                trains[sortAfter.get(j - 1)].getPredictionTime(station[1], Train.ARRIVE));
-
-                    }
-                } else {
-                    sortTime = trains[sortAfter.get(j - 1)].getPredictionTime(station[0], Train.ARRIVE);
-                }
-                if (sortTime < 0) {
-                    continue;
-                }
-                frag = true;
-                if (sortTime <= baseTime) {
-                    break;
+            int endStation=train1.getEndStation();
+            for(int j=0;j<trains[direction].size();j++){
+                Train train2=trains[direction].get(j);
+                if(train1.number.equals(train2.number)&&train1.type==train2.type&&i!=j&&train2.getStartStation()==endStation){
+                        train1.conbine(train2);
+                        trains[direction].remove(train2);
+                        if(j>i){
+                            i=i-1;
+                        }else{
+                            i=i-2;
+                        }
+                        break;
                 }
             }
-            if (frag) {
-                sortAfter.add(j, sortBefore.get(i));
-                sortBefore.remove(i);
-                i--;
-            }
-
         }
-
     }
 }

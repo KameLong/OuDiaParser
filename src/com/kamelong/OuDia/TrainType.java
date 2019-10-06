@@ -1,7 +1,7 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
 import com.kamelong.tool.Color;
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 
 import java.io.PrintWriter;
 /*
@@ -80,7 +80,7 @@ public class TrainType implements Cloneable {
         name = "種別名未設定";
     }
 
-    void setValue(String title, String value){
+    void setValue(String title,String value){
         switch (title){
             case "Syubetsumei":
                 name=value;
@@ -92,7 +92,7 @@ public class TrainType implements Cloneable {
                 textColor.setOuDiaColor(value);
                 break;
             case "JikokuhyouFontIndex":
-                fontIndex= Integer.parseInt(value);
+                fontIndex=Integer.parseInt(value);
                 break;
             case "JikokuhyouBackColor":
                 timeTableBackColor.setOuDiaColor(value);
@@ -123,7 +123,7 @@ public class TrainType implements Cloneable {
                 stopmark=value.equals("EStopMarkDrawType_DrawOnStop");
                 break;
             case "ParentSyubetsuIndex":
-                parentIndex= Integer.parseInt(value);
+                parentIndex=Integer.parseInt(value);
                 break;
         }
     }
@@ -202,7 +202,7 @@ public class TrainType implements Cloneable {
             result.textColor = this.textColor.clone();
             return result;
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new TrainType();
         }
 

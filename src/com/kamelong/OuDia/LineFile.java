@@ -1,12 +1,19 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
 
 import com.kamelong.tool.Color;
 import com.kamelong.tool.Font;
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 import com.kamelong.tool.ShiftJISBufferedReader;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Stack;
@@ -68,15 +75,15 @@ public class LineFile implements Cloneable {
     /**
      * 駅一覧
      */
-    public ArrayList<Station> station=new ArrayList<>();
+    public ArrayList<Station>station=new ArrayList<>();
     /**
      * 列車種別一覧
      */
-    public ArrayList<TrainType> trainType=new ArrayList<>();
+    public ArrayList<TrainType>trainType=new ArrayList<>();
     /**
      * ダイヤ一覧
      */
-    public ArrayList<Diagram> diagram=new ArrayList<>();
+    public ArrayList<Diagram>diagram=new ArrayList<>();
     /**
      * OuDiaバージョン
      */
@@ -86,29 +93,29 @@ public class LineFile implements Cloneable {
     /**
      * 時刻表フォント
      */
-    public ArrayList<Font> timeTableFont=new ArrayList<>();
+    public ArrayList<Font>timeTableFont=new ArrayList<>();
     /**
      * 時刻表Vフォント
      * 縦書きに使う？
      */
-    public Font timeTableVFont= Font.OUDIA_DEFAULT;
+    public Font timeTableVFont=Font.OUDIA_DEFAULT;
     /**
      * ダイヤ駅名フォント
      */
-    public Font diaStationNameFont= Font.OUDIA_DEFAULT;
+    public Font diaStationNameFont=Font.OUDIA_DEFAULT;
     /**
      * ダイヤ時刻フォント
      */
-    public Font diaTimeFont= Font.OUDIA_DEFAULT;
+    public Font diaTimeFont=Font.OUDIA_DEFAULT;
 
     /**
      * ダイヤ列車フォント
      */
-    public Font diaTrainFont= Font.OUDIA_DEFAULT;
+    public Font diaTrainFont=Font.OUDIA_DEFAULT;
     /**
      * コメントフォント
      */
-    public Font commentFont= Font.OUDIA_DEFAULT;
+    public Font commentFont=Font.OUDIA_DEFAULT;
     /**
      * ダイヤ文字色
      */
@@ -128,7 +135,7 @@ public class LineFile implements Cloneable {
     /**
      * 時刻表背景色
      */
-    public ArrayList<Color> timeTableBackColor=new ArrayList<>();
+    public ArrayList<Color>timeTableBackColor=new ArrayList<>();
     /**
      * StdOpeTimeLowerColor
      */
@@ -187,7 +194,7 @@ public class LineFile implements Cloneable {
      * @param file　入力ファイル
      * @throws Exception ファイルが読み込めなかった時に返す
      */
-    public LineFile(File file)throws Exception {
+    public LineFile(File file)throws Exception{
         filePath=file.getPath();
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
         version=br.readLine().split("=",-1)[1];
@@ -213,7 +220,7 @@ public class LineFile implements Cloneable {
     /**
      * Shift-JISで書かれたファイルを読み込む
      */
-    private void loadShiftJis(File file)throws Exception {
+    private void loadShiftJis(File file)throws Exception{
         BufferedReader br = new ShiftJISBufferedReader(new InputStreamReader(new FileInputStream(file),"Shift-JIS"));
         version=br.readLine().split("=",-1)[1];
         loadDiaFile(br);
@@ -224,7 +231,7 @@ public class LineFile implements Cloneable {
      * @param br 入力ファイル
      * @throws Exception 読み込み失敗
      */
-    protected void loadDiaFile(BufferedReader br)throws Exception {
+    protected void loadDiaFile(BufferedReader br)throws Exception{
         int direction=0;
         station=new ArrayList<>();
         trainType=new ArrayList<>();
@@ -341,7 +348,7 @@ public class LineFile implements Cloneable {
      * @param title
      * @param value
      */
-    protected void setValue(String title, String value){
+    protected void setValue(String title,String value){
         switch(title){
             case "Rosenmei":
                 name=value;
@@ -359,17 +366,17 @@ public class LineFile implements Cloneable {
             case "KitenJikoku":
                 switch(value.length()){
                     case 3:
-                        diagramStartTime=3600* Integer.parseInt(value.substring(0,1))+60* Integer.parseInt(value.substring(1,3));
+                        diagramStartTime=3600*Integer.parseInt(value.substring(0,1))+60*Integer.parseInt(value.substring(1,3));
                         break;
                     case 4:
-                        diagramStartTime=3600* Integer.parseInt(value.substring(0,2))+60* Integer.parseInt(value.substring(2,4));
+                        diagramStartTime=3600*Integer.parseInt(value.substring(0,2))+60*Integer.parseInt(value.substring(2,4));
                         break;
                     default:
-                        diagramStartTime=60* Integer.parseInt(value);
+                        diagramStartTime=60*Integer.parseInt(value);
                 }
                 break;
             case "EnableOperation":
-                operationStyle= Integer.parseInt(value);
+                operationStyle=Integer.parseInt(value);
                 break;
             case "Comment":
                 comment=value.replace("\\n","\n");
@@ -422,16 +429,16 @@ public class LineFile implements Cloneable {
                 stdOpeTimeIllegalColor.setOuDiaColor(value);
                 break;
             case "EkimeiLength":
-                stationNameWidth= Integer.parseInt(value);
+                stationNameWidth=Integer.parseInt(value);
                 break;
             case "JikokuhyouRessyaWidth":
-                trainWidth= Integer.parseInt(value);
+                trainWidth=Integer.parseInt(value);
                 break;
             case "AnySecondIncDec1":
-                secondShift[0]= Integer.parseInt(value);
+                secondShift[0]=Integer.parseInt(value);
                 break;
             case "AnySecondIncDec2":
-                secondShift[1]= Integer.parseInt(value);
+                secondShift[1]=Integer.parseInt(value);
                 break;
             case "DisplayRessyamei":
                 showTrainName=value.equals("1");
@@ -483,7 +490,7 @@ public class LineFile implements Cloneable {
             dia.saveToFile(out);
         }
 
-        out.println("KitenJikoku="+(diagramStartTime/3600)+ String.format("%02d",(diagramStartTime/60)%60));
+        out.println("KitenJikoku="+(diagramStartTime/3600)+String.format("%02d",(diagramStartTime/60)%60));
         out.println("DiagramDgrYZahyouKyoriDefault="+ stationSpaceDefault );
         out.println("EnableOperation="+operationStyle);
         out.println("Comment="+comment.replace("\n","\\n"));
@@ -494,7 +501,7 @@ public class LineFile implements Cloneable {
             out.println("JikokuhyouFont="+font.getOuDiaString());
         }
         for(int i=timeTableFont.size();i<8;i++){
-            out.println("JikokuhyouFont="+ Font.OUDIA_DEFAULT.getOuDiaString());
+            out.println("JikokuhyouFont="+Font.OUDIA_DEFAULT.getOuDiaString());
         }
         out.println("JikokuhyouVFont="+timeTableVFont.getOuDiaString());
         out.println("DiaEkimeiFont="+diaStationNameFont.getOuDiaString());
@@ -548,7 +555,7 @@ public class LineFile implements Cloneable {
             dia.saveToOuDiaFile(out);
         }
 
-        out.println("KitenJikoku="+(diagramStartTime/3600)+ String.format("%02d",(diagramStartTime/60)%60));
+        out.println("KitenJikoku="+(diagramStartTime/3600)+String.format("%02d",(diagramStartTime/60)%60));
         out.println("DiagramDgrYZahyouKyoriDefault="+ stationSpaceDefault );
         out.println("Comment="+comment.replace("\n","\\n"));
         out.println(".");
@@ -558,7 +565,7 @@ public class LineFile implements Cloneable {
             out.println("JikokuhyouFont="+font.getOuDiaString());
         }
         for(int i=timeTableFont.size();i<8;i++){
-            out.println("JikokuhyouFont="+ Font.OUDIA_DEFAULT.getOuDiaString());
+            out.println("JikokuhyouFont="+Font.OUDIA_DEFAULT.getOuDiaString());
         }
 
         out.println("JikokuhyouVFont="+timeTableVFont.getOuDiaString());
@@ -573,10 +580,11 @@ public class LineFile implements Cloneable {
         out.println("EkimeiLength="+(stationNameWidth));
         out.println("JikokuhyouRessyaWidth="+trainWidth);
         out.println(".");
-        out.println("FileTypeAppComment=AOdia V3.0a.0");
+        out.println("FileTypeAppComment=AOdia V3.0b.1");
 
         out.close();
     }
+
     @Override
     public LineFile clone(){
         try{
@@ -623,16 +631,14 @@ public class LineFile implements Cloneable {
             return result;
 
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new LineFile();
         }
     }
 
     /**
-     * OuDiaファイルで読み込むと番線情報がないため、
-     * oud2として扱うには不都合があります。
-     *
-     * 必要な数の番線を追加する事で解結を図ります
+     * この路線ファイルをoud2形式に合わせます。
+     * 番線が足りない場合は番線を追加します。
      */
     public void convertToOud2() {
         for (Station s : station) {
@@ -643,13 +649,14 @@ public class LineFile implements Cloneable {
                 s.tracks.add(track);
             }
         }
+        checkBorderStation();
     }
 
     /**
-     * oudiaのborderをoudia2ndのbruchStationの考えに合わせます。
+     * OuDia形式の境界線をOuDiaSecondのbranchstationに変換します。
      */
     public void checkBorderStation(){
-        //
+        //oudiaのborderをoudia2ndに合わせる
          for(int index=0;index<getStationNum();index++){
              Station station=getStation(index);
              if(station.border){
@@ -658,25 +665,27 @@ public class LineFile implements Cloneable {
                          station.brunchCoreStationIndex=check;
                      }
                  }
-                 for(int check=0;check<index;check++){
-                     if(getStation(check).name.equals(getStation(index+1).name)){
-                         getStation(index+1).brunchCoreStationIndex=check;                     }
+                 if(index!=getStationNum()-1) {
+                     for (int check = 0; check < index; check++) {
+                         if (getStation(check).name.equals(getStation(index + 1).name)) {
+                             getStation(index + 1).brunchCoreStationIndex = check;
+                         }
+                     }
                  }
              }
          }
          //oudiaSecondのborderをoudiaに合わせる
-        //OuDiaファイルとして出力する時用
-        for(int index=0;index<getStationNum();index++){
-            Station station=getStation(index);
-            if(station.brunchCoreStationIndex>=0){
-                if(station.brunchCoreStationIndex<index){
-                    getStation(index-1).border=true;
-                }else{
-                    station.border=true;
-                }
-
-            }
-        }
+//        for(int index=0;index<getStationNum();index++){
+//            Station station=getStation(index);
+//            if(station.brunchCoreStationIndex>=0){
+//                if(station.brunchCoreStationIndex<index){
+//                    getStation(index-1).border=true;
+//                }else{
+//                    station.border=true;
+//                }
+//
+//            }
+//        }
     }
 
     /*
@@ -700,6 +709,9 @@ public class LineFile implements Cloneable {
         return diagram.get(index);
     }
 
+    /**
+     * 列車数
+     */
     public int getTrainNum(int diaIndex,int direction){
         return diagram.get(diaIndex).getTrainNum(direction);
     }
@@ -712,10 +724,15 @@ public class LineFile implements Cloneable {
 
     /**
      * TrainType取得
-     * @return
      */
     public ArrayList<TrainType> getTrainType() {
         return trainType;
+    }
+    /**
+     * TrainType取得
+     */
+    public TrainType getTrainType(int index) {
+        return trainType.get(index);
     }
 
     /**
@@ -733,30 +750,27 @@ public class LineFile implements Cloneable {
         return station.get(index);
     }
 
+    private ArrayList<Integer>stationTime=new ArrayList<>();
     /**
-     * 駅間の最短所要時間
-     * 単位は秒
-     * 起点駅を0秒
-     * そこから各駅までの所要時間の累計を配列の形で格納
+     * 最短所要時間のリストを取得します。
+     * リストには各駅ごとの起点駅からの累計最短所要時間が入ります。
+     * 最短所要時間は毎回計算するのではなく、この関数初回使用時に計算され、２回目以降は初回の結果が返ります。
+     * 最短所要時間を更新したい場合はcalcStationTime()を呼び出してください。
+     *
+     * なお、駅数が変化した場合はcalcStationTimeが呼ばれます
+     * @return
      */
-    private ArrayList<Integer> stationTime=new ArrayList<>();
-
-    /**
-     * 最短所要時刻を取得する
-     */
-    public ArrayList<Integer> getStationTime(){
+    public ArrayList<Integer>getStationTime(){
         if(stationTime.size()!=station.size()){
-            //駅数の変更があるときは再計算する。
             calcStationTime();
         }
         return stationTime;
     }
-
     /**
-     * 最短所要時刻を再計算する。
-     * この処理は比較的重いので注意
+     * 最短所要時間を更新します。
      */
-    private void calcStationTime(){
+
+    public  void calcStationTime(){
         stationTime=new ArrayList<>();
         stationTime.add(0);
         for(Diagram dia:diagram){
@@ -917,7 +931,9 @@ public class LineFile implements Cloneable {
     }
 
     /**
-     * brunch:trueの時追加した駅の列車停タイプが経由なしになる。
+     * 駅を追加します。
+     * 駅が追加されると、所属列車のstationTimeが更新されます。
+     * brunch=trueの時、新規駅を通過する列車は経由なしになります。
      */
     public void addStation(int index,Station newStation,boolean brunch){
         if(index<0||index>=getStationNum()){
@@ -970,9 +986,11 @@ public class LineFile implements Cloneable {
         return 0;
     }
 
+    /**
+     * 路線の切り出しを行います
+     * @param userOuterStation trueの時、切り出し範囲外に直通する列車の始発終着駅を路線外始終着駅として登録します
+     */
     public void makeSubLine(int startStation,int endStation,boolean userOuterStation){
-
-
         if(userOuterStation) {
             int startStationOuterShift = getStation(startStation).outerTerminals.size();
             int endStationOuterShift = getStation(endStation).outerTerminals.size();
@@ -1006,6 +1024,12 @@ public class LineFile implements Cloneable {
                     }
                 }
                 for (Train train : dia.trains[1]) {
+                    if(train.getStartStation()<0){
+                        continue;
+                    }
+                    if(train.getEndStation()<0){
+                        continue;
+                    }
                     if (train.getEndStation() < startStation) {
                         StationTimeOperation operation = new StationTimeOperation();
                         operation.operationType = 4;
@@ -1036,12 +1060,11 @@ public class LineFile implements Cloneable {
         }
         for(int i=getStationNum()-1;i>endStation;i--){
             deleteStation(i);
-
         }
         for(int i=startStation-1;i>=0;i--){
             deleteStation(i);
-
         }
+        //時刻表スタイル適正化
         getStation(0).showDepartureCustom[Train.DOWN]=true;
         getStation(0).showDepartureCustom[Train.UP]=false;
         getStation(0).showArrivalCustom[Train.DOWN]=false;
@@ -1054,6 +1077,13 @@ public class LineFile implements Cloneable {
 
     }
 
+    /**
+     * 路線ファイルの組み入れを行います。
+     * insertpos組み入れ駅
+     *
+     * 路線を組み入れる際は、組み入れ駅を２つに分離し、その間に路線を挿入します
+     * 組み入れ路線の始発終着駅が組み入れ駅と同じ場合は、２路線の駅を共通化します。
+     */
     public void addLineFile(int insertPos,LineFile other){
         LineFile lineFile=other.clone();
         String stationName=getStation(insertPos).name;
@@ -1097,7 +1127,7 @@ public class LineFile implements Cloneable {
                     }
                 }
                 if(!frag){
-                    lineFile.diagram.add(dia.clone(this));
+                    diagram.add(dia.clone(this));
                 }
             }
             station.get(insertPos).showArrivalCustom[Train.DOWN]=true;
@@ -1132,7 +1162,6 @@ public class LineFile implements Cloneable {
                     train.setTime(insertPos,Train.ARRIVE,-1);
                 }
             }
-
             for(Diagram dia:lineFile.diagram){
                 boolean frag=false;
                 for(Diagram dia2:diagram){
@@ -1148,9 +1177,10 @@ public class LineFile implements Cloneable {
                     }
                 }
                 if(!frag){
-                    lineFile.diagram.add(dia.clone(this));
+                    diagram.add(dia.clone(this));
                 }
             }
+
             station.get(insertPos+other.getStationNum()).showArrivalCustom[Train.DOWN]=true;
             station.get(insertPos+other.getStationNum()).showArrivalCustom[Train.UP]=true;
             station.get(insertPos+other.getStationNum()).showDepartureCustom[Train.DOWN]=true;
@@ -1184,7 +1214,6 @@ public class LineFile implements Cloneable {
                     train.setTime(insertPos,Train.ARRIVE,-1);
                 }
             }
-
             for(Diagram dia:lineFile.diagram){
                 boolean frag=false;
                 for(Diagram dia2:diagram){
@@ -1200,9 +1229,10 @@ public class LineFile implements Cloneable {
                     }
                 }
                 if(!frag){
-                    lineFile.diagram.add(dia.clone(this));
+                    diagram.add(dia.clone(this));
                 }
             }
+
             station.get(insertPos+other.getStationNum()+1).brunchCoreStationIndex=insertPos;
 
             if(insertPos==0){
@@ -1216,6 +1246,9 @@ public class LineFile implements Cloneable {
 
     }
 
+    /**
+     * この路線の駅順を反転させます。
+     */
     public void reverse() {
         Collections.reverse(station);
         for (Station s : station) {
@@ -1236,6 +1269,9 @@ public class LineFile implements Cloneable {
         }
     }
 
+    /**
+     * 列車を時刻順に並び替えます
+     */
     public void sortTrain(int diaIndex, int direction, int stationIndex) {
         getDiagram(diaIndex).sortTrain(direction, stationIndex);
     }

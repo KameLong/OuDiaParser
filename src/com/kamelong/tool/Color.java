@@ -165,7 +165,7 @@ public class Color implements Cloneable{
         try{
             return (Color)super.clone();
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new Color();
         }
     }

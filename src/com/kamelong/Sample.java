@@ -1,6 +1,6 @@
 package com.kamelong;
 
-import com.kamelong.oudia.LineFile;
+import com.kamelong.OuDia.LineFile;
 
 import java.io.File;
 

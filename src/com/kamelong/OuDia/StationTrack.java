@@ -1,4 +1,4 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
 import java.io.PrintWriter;
 /*
@@ -12,7 +12,7 @@ import java.io.PrintWriter;
  * 番線１つを表します。
  * 全てのStationTrackはStationによって管理されます
  */
-public class StationTrack implements Cloneable {
+public class StationTrack implements Cloneable{
     /**
      番線名
      */
@@ -28,7 +28,7 @@ public class StationTrack implements Cloneable {
      */
     public String trackShortNameUp="";
 
-    public StationTrack(String name, String shortName){
+    public StationTrack(String name,String shortName){
         trackName=name;
         trackShortName=shortName;
         trackShortNameUp="";
@@ -39,7 +39,7 @@ public class StationTrack implements Cloneable {
     /**
      * oudiaファイルを1行読み込む
      */
-    void setValue(String title, String value){
+    void setValue(String title,String value){
         switch (title){
             case"TrackName":
                 trackName=value;

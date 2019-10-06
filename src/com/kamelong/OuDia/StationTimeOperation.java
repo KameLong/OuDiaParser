@@ -1,6 +1,6 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +18,7 @@ import java.util.Arrays;
  * KameLongはこのクラスの使用方法を理解していないため、
  * OuDia2ndのソースコード（CentDetAfterOperation.hやCentDetBeforeOperation.h）をご覧ください。
  */
-public class StationTimeOperation implements Cloneable {
+public class StationTimeOperation implements Cloneable{
     /**
      作業種類です。
      0:入れ替え
@@ -313,17 +313,17 @@ public class StationTimeOperation implements Cloneable {
      それを配列形式で保持します。
      この作業の運用番号は、運用探索によって求まります。
      */
-    public ArrayList<String> operationNumberList=new ArrayList<>();
+    public ArrayList<String>operationNumberList=new ArrayList<>();
 
 
     /**
      *
      */
-    public ArrayList<StationTimeOperation> afterOperation=new ArrayList<>();
+    public ArrayList<StationTimeOperation>afterOperation=new ArrayList<>();
     /**
      *
      */
-    public ArrayList<StationTimeOperation> beforeOperation=new ArrayList<>();
+    public ArrayList<StationTimeOperation>beforeOperation=new ArrayList<>();
 
     public StationTimeOperation(){
 
@@ -341,12 +341,12 @@ public class StationTimeOperation implements Cloneable {
             String[] values=value.split("\\$",-1);
             String[] value1=values[0].split("/",-1);
             String[] value2;
-            operationType= Integer.parseInt(value1[0]);
+            operationType=Integer.parseInt(value1[0]);
             switch (operationType){
                 case 0:
                     //入れかえ
                     value2=values[1].split("/",-1);
-                    intData1= Integer.parseInt(value1[1]);
+                    intData1=Integer.parseInt(value1[1]);
                     time2= StationTime.timeStringToInt(value2[0]);
                     time1= StationTime.timeStringToInt(value2[1]);
                     boolData1=values[2].equals("1");
@@ -358,8 +358,8 @@ public class StationTimeOperation implements Cloneable {
                     break;
                 case 2:
                     value2=values[1].split("/",-1);
-                    intData1= Integer.parseInt(value2[0]);
-                    intData2= Integer.parseInt(value1[1]);
+                    intData1=Integer.parseInt(value2[0]);
+                    intData2=Integer.parseInt(value1[1]);
                     time1= StationTime.timeStringToInt(value2[1]);
                     break;
                 case 3:
@@ -383,7 +383,7 @@ public class StationTimeOperation implements Cloneable {
                             operationNumberList.addAll(Arrays.asList(values[3].split(";", -1)));
                         }
                     }catch (Exception e){
-                        SDlog.log(e);
+                        Logger.log(e);
                     }
                     break;
                 case 5:
@@ -480,7 +480,7 @@ public class StationTimeOperation implements Cloneable {
 //            result.operationNumberList=(ArrayList<String>)operationNumberList.clone();
             return result;
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new StationTimeOperation();
         }
     }

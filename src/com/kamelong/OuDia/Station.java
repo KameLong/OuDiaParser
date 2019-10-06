@@ -1,10 +1,9 @@
-package com.kamelong.oudia;
+package com.kamelong.OuDia;
 
-import com.kamelong.tool.SDlog;
+import com.kamelong.tool.Logger;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.UUID;
 /*
  * Copyright (c) 2019 KameLong
  * contact:kamelong.com
@@ -17,7 +16,7 @@ import java.util.UUID;
  * 実路線構造と関係なく、時刻表上で異なる位置にある駅は別の駅となります。
  * 時刻表中に同一駅が複数現れた場合も、Stationオブジェクトを共通化せず、別々のオブジェクトとしてください。
  */
-public class Station implements Cloneable {
+public class Station implements Cloneable{
     public LineFile lineFile;
     /**
      * 駅名
@@ -52,7 +51,7 @@ public class Station implements Cloneable {
     public boolean bigStation =false;
     //ダイヤグラム列車情報表示は未対応
 
-    public ArrayList<StationTrack> tracks=new ArrayList<>();
+    public ArrayList<StationTrack>tracks=new ArrayList<>();
     /**
      境界線あり。
 
@@ -107,7 +106,7 @@ public class Station implements Cloneable {
      この中から駅名を選択します。
 
      */
-    public ArrayList<OuterTerminal> outerTerminals=new ArrayList<>();
+    public ArrayList<OuterTerminal>outerTerminals=new ArrayList<>();
     /**
      この駅から次の駅までの距離(秒)
      デフォルト値は0で、0の場合は、「ダイヤグラムの既定の駅間幅」
@@ -189,9 +188,6 @@ public class Station implements Cloneable {
      */
     public boolean omitTrack=false;
 
-    //ここからJPTI向け
-    public UUID jptiStationID= UUID.randomUUID();
-
     public Station(LineFile lineFile) {
         this.lineFile = lineFile;
         name="新規作成";
@@ -220,25 +216,25 @@ public class Station implements Cloneable {
                 setShowDiagramInfo(1,value);
                 break;
             case  "DownMain":
-                stopMain[0]= Integer.parseInt(value);
-                if (Double.parseDouble(lineFile.version.substring(lineFile.version.indexOf(".") + 1)) < 1.06) {
+                stopMain[0]=Integer.parseInt(value);
+                if (Double.parseDouble(lineFile.version.substring(lineFile.version.indexOf(".") + 1)) <= 1.06) {
                     stopMain[0]--;
                 }
                 break;
             case  "UpMain":
-                stopMain[1]= Integer.parseInt(value);
-                if (Double.parseDouble(lineFile.version.substring(lineFile.version.indexOf(".") + 1)) < 1.06) {
+                stopMain[1]=Integer.parseInt(value);
+                if (Double.parseDouble(lineFile.version.substring(lineFile.version.indexOf(".") + 1)) <= 1.06) {
                     stopMain[1]--;
                 }
                 break;
             case "BrunchCoreEkiIndex":
-                brunchCoreStationIndex= Integer.valueOf(value);
+                brunchCoreStationIndex=Integer.valueOf(value);
                 break;
             case "BrunchOpposite":
                 brunchOpposite=value.equals("1");
                 break;
             case "LoopOriginEkiIndex":
-                loopOriginStationIndex= Integer.valueOf(value);
+                loopOriginStationIndex=Integer.valueOf(value);
                 break;
             case "LoopOpposite":
                 loopOpposite=value.equals("1");
@@ -253,16 +249,16 @@ public class Station implements Cloneable {
                 showDiagramTrack=value.equals("1");
                 break;
             case "NextEkiDistance":
-                nextStationDistance= Integer.valueOf(value);
+                nextStationDistance=Integer.valueOf(value);
                 break;
             case "JikokuhyouTrackOmit":
                 omitTrack=value.equals("1");
                 break;
             case "JikokuhyouOperationOrigin":
-                stationOperationNum[0]= Integer.parseInt(value);
+                stationOperationNum[0]=Integer.parseInt(value);
                 break;
             case "JikokuhyouOperationTerminal":
-                stationOperationNum[1]= Integer.parseInt(value);
+                stationOperationNum[1]=Integer.parseInt(value);
                 break;
             case "JikokuhyouJikokuDisplayKudari":
                 showArrivalCustom[0]=value.split(",")[0].equals("1");
@@ -273,16 +269,16 @@ public class Station implements Cloneable {
                 showDepartureCustom[1]=value.split(",")[1].equals("1");
                 break;
             case "JikokuhyouSyubetsuChangeDisplayKudari":
-                showTrainNumberCustom[0]= Integer.parseInt(value.split(",")[0]);
-                showTrainOperationCustom[0]= Integer.parseInt(value.split(",")[1]);
-                showTrainTypeCustom[0]= Integer.parseInt(value.split(",")[2]);
-                showTrainNameCustom[0]= Integer.parseInt(value.split(",")[3]);
+                showTrainNumberCustom[0]=Integer.parseInt(value.split(",")[0]);
+                showTrainOperationCustom[0]=Integer.parseInt(value.split(",")[1]);
+                showTrainTypeCustom[0]=Integer.parseInt(value.split(",")[2]);
+                showTrainNameCustom[0]=Integer.parseInt(value.split(",")[3]);
                 break;
             case "JikokuhyouSyubetsuChangeDisplayNobori":
-                showTrainNumberCustom[1]= Integer.parseInt(value.split(",")[0]);
-                showTrainOperationCustom[1]= Integer.parseInt(value.split(",")[1]);
-                showTrainTypeCustom[1]= Integer.parseInt(value.split(",")[2]);
-                showTrainNameCustom[1]= Integer.parseInt(value.split(",")[3]);
+                showTrainNumberCustom[1]=Integer.parseInt(value.split(",")[0]);
+                showTrainOperationCustom[1]=Integer.parseInt(value.split(",")[1]);
+                showTrainTypeCustom[1]=Integer.parseInt(value.split(",")[2]);
+                showTrainNameCustom[1]=Integer.parseInt(value.split(",")[3]);
                 break;
             case "Kyoukaisen":
                 border=value.equals("1");
@@ -438,7 +434,7 @@ public class Station implements Cloneable {
      * oudiaファイルの文字列形式からDiagramRessyajouhouHyoujiを読み込みます
      * @param value
      */
-    private void setShowDiagramInfo(int direction, String value){
+    private void setShowDiagramInfo(int direction,String value){
         switch (value){
             case "DiagramRessyajouhouHyouji_Anytime":
                 showDiagramInfo[direction]=1;
@@ -466,18 +462,23 @@ public class Station implements Cloneable {
         return false;
     }
 
+    /**
+     * @return 番線数
+     */
     public int getTrackNum() {
         return tracks.size();
     }
 
+    /**
+     * @return 番線名
+     */
     public String getTrackName(int trackIndex) {
-        try {
-            return tracks.get(trackIndex).trackName;
-        }catch (Exception e){
-            return "番線名なし";
-        }
+        return tracks.get(trackIndex).trackName;
     }
 
+    /**
+     * @return 番線略称
+     */
     public String getTrackShortName(int trackIndex) {
         if(trackIndex<0||trackIndex>= tracks.size()){
             return "";
@@ -622,6 +623,11 @@ public class Station implements Cloneable {
         }
     }
 
+    /**
+     * 駅を複製します
+     * @param lineFile 複製した駅の親LineFile
+     * @return 複製した駅
+     */
     public Station clone(LineFile lineFile){
         try {
             Station result = (Station) super.clone();
@@ -648,7 +654,7 @@ public class Station implements Cloneable {
             }
             return result;
         }catch (CloneNotSupportedException e){
-            SDlog.log(e);
+            Logger.log(e);
             return new Station(lineFile);
         }
     }
@@ -659,23 +665,32 @@ public class Station implements Cloneable {
      */
 
 
-
-
+    /**
+     * 着時刻を表示するか
+     * Custom時刻表を基準にします
+     */
     public boolean showAriTime(int direction) {
         return showArrivalCustom[direction];
     }
 
+    /**
+     * 発着番線を表示するか
+     * Custom時刻表を基準にします
+     */
     public boolean showTrack(int direction) {
         return showtrack[direction];
     }
 
+    /**
+     * 発時刻を表示するか
+     * Custom時刻表を基準にします
+     */
     public boolean showDepTime(int direction) {
         return showDepartureCustom[direction];
     }
 
     /**
      * 路線外駅名を返します
-     * @param index
      * @return
      */
     public String getOuterStationTimeTableName(int index){
@@ -685,12 +700,15 @@ public class Station implements Cloneable {
             }
             return outerTerminals.get(index).outerTerminalName;
         }catch (Exception e){
-            SDlog.log(e);
+            Logger.log(e);
             return null;
         }
     }
 
 
+    /**
+     * 番線名を入力します
+     */
     public void setTrackName(int index, String value) {
         if (index < 0 || index >= getTrackNum()) {
             return;
@@ -699,6 +717,9 @@ public class Station implements Cloneable {
 
     }
 
+    /**
+     * 番線略称を入力します
+     */
     public void setTrackShortName(int index, String value) {
         if (index < 0 || index >= getTrackNum()) {
             return;
@@ -706,13 +727,16 @@ public class Station implements Cloneable {
         tracks.get(index).trackShortName = value;
     }
 
+    /**
+     * 発着番線を追加します
+     */
     public void addTrack(StationTrack track) {
         tracks.add(track);
     }
 
     /**
+     * 発着番線を削除します。
      * 主発着番線に指定されている場合　削除せずfalseを返す
-     * @param index
      */
     public boolean deleteTrack(int index) {
         if(stopMain[Train.DOWN]==index){
@@ -751,17 +775,29 @@ public class Station implements Cloneable {
         return true;
 
     }
+
+    /**
+     * 路線外始終着駅を追加します
+     * @param terminal
+     */
     public void addOuterTerminal(OuterTerminal terminal) {
         outerTerminals.add(terminal);
     }
 
     /**
+     * 路線外始終着駅を削除します
      * 列車が使用している場合　false
      * 削除に成功した場合　true
-     * @param index
-     * @return
      */
-    public boolean deleteOuterTerminal(int index) {
+    public boolean deleteOuterTerminal(OuterTerminal terminal) {
+        int index=outerTerminals.indexOf(terminal);
+        if(index<outerTerminals.size()&&index>=0){
+return deleteOuterTerminal(index);
+        }
+        return true;
+    }
+
+        public boolean deleteOuterTerminal(int index) {
         final int stationIndex = lineFile.station.indexOf(this);
         for (Diagram dia : lineFile.diagram) {
             for(int direction=0;direction<2;direction++) {
@@ -803,7 +839,7 @@ public class Station implements Cloneable {
     }
 
     /**
-     * 駅順の逆転に伴ってパラメーターを書き換えます。
+     * 路線が逆転されることに従い、この駅の発着時刻表示情報なども反転されます
      */
     public void reverse(){
         reverse(this.showArrival);
@@ -818,6 +854,7 @@ public class Station implements Cloneable {
         reverse(this.showTrainTypeCustom);
         reverse(this.stationOperationNum);
         reverse(this.stopMain);
+        //分岐駅情報も反転対象
         if(brunchCoreStationIndex>=0) {
             brunchCoreStationIndex = lineFile.getStationNum() - brunchCoreStationIndex - 1;
         }
@@ -826,14 +863,24 @@ public class Station implements Cloneable {
 
         }
     }
-    private <T> void reverse(T[] task){
+
+    /**
+     * オブジェクトを逆転させる
+     * @param task
+     * @param <T>
+     */
+    private static <T> void reverse(T[] task){
         T temp=task[0];
         task[0]=task[1];
         task[1]=temp;
 
     }
 
-    private void reverse(boolean[] task){
+    /**
+     * boolean  型の配列を逆転させる
+     * @param task
+     */
+    private static void reverse(boolean[] task){
         boolean temp=task[0];
         task[0]=task[1];
         task[1]=temp;
