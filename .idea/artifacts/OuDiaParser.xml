@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="OuDiaParser">
+    <output-path>$PROJECT_DIR$/out/artifacts/OuDiaParser</output-path>
+    <root id="archive" name="OuDiaParser.jar">
+      <element id="module-output" name="OuDia" />
+    </root>
+  </artifact>
+</component>
